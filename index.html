@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LORD'S ARCADE — MARCH PINBALL TOURNAMENT 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #04040a;
+    --panel:    #0a0a18;
+    --border:   #1e1e3f;
+    --green:    #00ff66;
+    --pink:     #ff0080;
+    --cyan:     #00e5ff;
+    --gold:     #ffd700;
+    --orange:   #ff8c00;
+    --purple:   #bf00ff;
+    --dim:      #5a5a8a;
+    --text:     #d0d0f0;
+
+    /* table colors */
+    --ww:   #00e5ff;
+    --lk:   #00ff66;
+    --ho:   #ff8c00;
+    --sb:   #ff0080;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ── CRT overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 9999;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,.18) 2px,
+      rgba(0,0,0,.18) 4px
+    );
+    animation: flicker 8s infinite;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0; z-index: 9998;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7) 100%);
+  }
+  @keyframes flicker {
+    0%,97%,100% { opacity: 1; }
+    98% { opacity: .85; }
+    99% { opacity: .95; }
+  }
+
+  /* ── Floating shamrocks ── */
+  .shamrock {
+    position: fixed;
+    font-size: 24px;
+    opacity: .12;
+    pointer-events: none;
+    animation: floatUp linear infinite;
+    z-index: 0;
+  }
+  @keyframes floatUp {
+    0%   { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+    10%  { opacity: .12; }
+    90%  { opacity: .12; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+  }
+
+  /* ── Layout ── */
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 12px 60px;
+  }
+
+  /* ── Header ── */
+  header {
+    text-align: center;
+    padding: 28px 0 16px;
+    position: relative;
+  }
+  .marquee-lights {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .bulb {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    animation: blink 1.2s infinite;
+  }
+  .bulb:nth-child(even) { animation-delay: .6s; }
+  .b-g  { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .b-p  { background: var(--pink);  box-shadow: 0 0 8px var(--pink); }
+  .b-c  { background: var(--cyan);  box-shadow: 0 0 8px var(--cyan); }
+  .b-o  { background: var(--orange);box-shadow: 0 0 8px var(--orange); }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:.2} }
+
+  h1 {
+    font-size: clamp(14px, 3vw, 22px);
+    color: var(--gold);
+    text-shadow: 0 0 10px var(--gold), 0 0 30px #ff8c0088;
+    letter-spacing: 2px;
+    line-height: 1.6;
+    animation: pulse 3s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { text-shadow: 0 0 10px var(--gold), 0 0 30px #ff8c0088; }
+    50%     { text-shadow: 0 0 20px var(--gold), 0 0 60px #ff8c00cc, 0 0 80px #ffd70066; }
+  }
+  .subtitle {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: var(--green);
+    margin-top: 8px;
+    letter-spacing: 4px;
+    text-shadow: 0 0 12px var(--green);
+  }
+  .march-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 14px;
+    border: 2px solid var(--green);
+    color: var(--green);
+    font-size: 9px;
+    letter-spacing: 3px;
+    text-shadow: 0 0 8px var(--green);
+    box-shadow: 0 0 10px var(--green) inset, 0 0 10px var(--green);
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+  @keyframes glow {
+    from { box-shadow: 0 0 6px var(--green) inset, 0 0 6px var(--green); }
+    to   { box-shadow: 0 0 16px var(--green) inset, 0 0 20px var(--green); }
+  }
+
+  /* ── Nav tabs ── */
+  nav {
+    display: flex;
+    gap: 4px;
+    margin: 20px 0 0;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    transition: all .2s;
+    flex: 1;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .tab-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .tab-btn.active {
+    background: #0d0d22;
+    border-color: var(--gold);
+    color: var(--gold);
+    text-shadow: 0 0 8px var(--gold);
+    box-shadow: 0 0 12px var(--gold)44;
+  }
+
+  /* ── Screen panels ── */
+  .screen { display: none; padding-top: 20px; }
+  .screen.active { display: block; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
+
+  .panel {
+    background: var(--panel);
+    border: 2px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  }
+  .panel-title {
+    font-size: 13px;
+    color: var(--cyan);
+    text-shadow: 0 0 10px var(--cyan);
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--cyan)66, transparent);
+  }
+
+  /* ── Form elements ── */
+  label {
+    display: block;
+    font-size: 9px;
+    color: var(--dim);
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  input[type=text], input[type=number], select {
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    background: #06061a;
+    border: 2px solid var(--border);
+    color: var(--green);
+    padding: 10px 14px;
+    width: 100%;
+    margin-bottom: 16px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    letter-spacing: 2px;
+  }
+  input:focus, select:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 10px var(--green)44;
+  }
+  select option { background: #06061a; }
+
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    padding: 14px 24px;
+    border: 2px solid;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all .15s;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .btn:hover::after { opacity: .08; }
+  .btn:active { transform: scale(.97); }
+
+  .btn-green  { color: var(--green); border-color: var(--green); background: transparent; box-shadow: 0 0 10px var(--green)33; }
+  .btn-green:hover  { box-shadow: 0 0 20px var(--green)66; text-shadow: 0 0 8px var(--green); }
+  .btn-pink   { color: var(--pink);  border-color: var(--pink);  background: transparent; box-shadow: 0 0 10px var(--pink)33; }
+  .btn-pink:hover   { box-shadow: 0 0 20px var(--pink)66; }
+  .btn-gold   { color: var(--gold);  border-color: var(--gold);  background: transparent; box-shadow: 0 0 10px var(--gold)33; }
+  .btn-gold:hover   { box-shadow: 0 0 20px var(--gold)66; }
+  .btn-cyan   { color: var(--cyan);  border-color: var(--cyan);  background: transparent; }
+  .btn-full   { width: 100%; }
+
+  /* ── Table selector ── */
+  .table-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .table-card {
+    padding: 16px 12px;
+    border: 2px solid var(--border);
+    cursor: pointer;
+    text-align: center;
+    transition: all .2s;
+    background: #06061a;
+    font-size: 9px;
+    letter-spacing: 1px;
+    line-height: 1.8;
+  }
+  .table-card .emoji { font-size: 28px; display: block; margin-bottom: 6px; }
+  .table-card[data-table="whirlwind"]    { --tc: var(--ww); }
+  .table-card[data-table="leprechaun"]   { --tc: var(--lk); }
+  .table-card[data-table="hoops"]        { --tc: var(--ho); }
+  .table-card[data-table="springbreak"]  { --tc: var(--sb); }
+  .table-card { color: var(--tc); border-color: #222240; }
+  .table-card:hover { border-color: var(--tc); box-shadow: 0 0 14px var(--tc)44; }
+  .table-card.selected {
+    border-color: var(--tc);
+    background: #06061a;
+    box-shadow: 0 0 20px var(--tc)55, inset 0 0 20px var(--tc)11;
+    text-shadow: 0 0 8px var(--tc);
+  }
+
+  /* ── Leaderboard sub-tabs ── */
+  .sub-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .sub-tab {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 8px 10px;
+    background: #06061a;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    transition: all .2s;
+    flex: 1;
+    text-align: center;
+  }
+  .sub-tab:hover { color: var(--text); border-color: var(--dim); }
+  .sub-tab.active { border-color: var(--gold); color: var(--gold); text-shadow: 0 0 6px var(--gold); }
+
+  .lb-screen { display: none; }
+  .lb-screen.active { display: block; animation: fadeIn .3s ease; }
+
+  /* ── Scoreboard table ── */
+  .score-table { width: 100%; border-collapse: collapse; }
+  .score-table th {
+    font-size: 8px;
+    color: var(--dim);
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: 1px;
+  }
+  .score-table td {
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    padding: 10px 10px;
+    border-bottom: 1px solid #0d0d20;
+    transition: background .2s;
+  }
+  .score-table tr:hover td { background: #0d0d22; }
+
+  .rank-1 td:first-child { color: var(--gold); text-shadow: 0 0 10px var(--gold); }
+  .rank-2 td:first-child { color: #c0c0c0; }
+  .rank-3 td:first-child { color: #cd7f32; }
+
+  .pts-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 16px;
+    border: 1px solid;
+    letter-spacing: 1px;
+  }
+  .pts-0  { color: var(--gold); border-color: var(--gold); text-shadow: 0 0 8px var(--gold); }
+  .pts-lo { color: var(--green); border-color: var(--green); }
+  .pts-hi { color: var(--pink); border-color: var(--pink); }
+
+  .score-num { color: var(--cyan); letter-spacing: 2px; }
+  .player-name { color: var(--text); }
+
+  .crown { font-size: 18px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--panel);
+    border: 2px solid var(--green);
+    color: var(--green);
+    font-size: 10px;
+    padding: 14px 28px;
+    z-index: 10000;
+    text-shadow: 0 0 8px var(--green);
+    box-shadow: 0 0 20px var(--green)66;
+    transition: transform .3s, opacity .3s;
+    opacity: 0;
+    text-align: center;
+    letter-spacing: 1px;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  #toast.error { border-color: var(--pink); color: var(--pink); text-shadow: 0 0 8px var(--pink); box-shadow: 0 0 20px var(--pink)66; }
+
+  /* ── Setup screen ── */
+  .code-block {
+    background: #02020a;
+    border: 1px solid var(--border);
+    padding: 16px;
+    font-family: 'VT323', monospace;
+    font-size: 15px;
+    color: var(--green);
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  .step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+  }
+  .step-num {
+    min-width: 28px; height: 28px;
+    background: var(--gold);
+    color: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+    font-family: 'Press Start 2P', monospace;
+  }
+  .step p {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+
+  /* ── Ticker ── */
+  .ticker-wrap {
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: #06061a;
+    padding: 8px 0;
+    margin: 12px 0 0;
+  }
+  .ticker {
+    display: flex;
+    animation: tickerMove 30s linear infinite;
+    white-space: nowrap;
+    gap: 40px;
+  }
+  @keyframes tickerMove { from{transform:translateX(0)}to{transform:translateX(-50%)} }
+  .ticker span {
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    color: var(--green);
+    text-shadow: 0 0 6px var(--green);
+    letter-spacing: 2px;
+    flex-shrink: 0;
+  }
+  .ticker .sep { color: var(--gold); }
+
+  /* ── Empty state ── */
+  .empty {
+    text-align: center;
+    padding: 30px;
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    color: var(--dim);
+    letter-spacing: 2px;
+  }
+
+  /* ── Flashing INSERT COIN ── */
+  .insert-coin {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 11px;
+    color: var(--gold);
+    animation: blink 1s infinite;
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px var(--gold);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 520px) {
+    .table-grid { grid-template-columns: 1fr 1fr; }
+    h1 { font-size: 13px; }
+    .tab-btn { font-size: 7px; padding: 8px 6px; }
+  }
+
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 16px 0;
+  }
+
+  .badge-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .badge {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    padding: 3px 10px;
+    border: 1px solid;
+    letter-spacing: 1px;
+  }
+
+  input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+
+  .score-table td.rank-cell {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    width: 40px;
+    color: var(--dim);
+  }
+
+  .help-text {
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    color: var(--dim);
+    margin-bottom: 16px;
+    line-height: 1.6;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dim); }
+</style>
+</head>
+<body>
+
+<!-- Floating shamrocks -->
+<div id="shamrocks"></div>
+
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header>
+    <div class="marquee-lights" id="lights"></div>
+    <h1>🎯 LORD'S ARCADE 🎯<br>PINBALL CHAMPIONSHIP</h1>
+    <div class="subtitle">☘ MARCH 2026 ☘</div>
+    <div class="march-badge">INSERT COIN TO PLAY</div>
+    <div class="ticker-wrap">
+      <div class="ticker" id="ticker">
+        <span>🌀 WHIRLWIND</span><span class="sep">✦</span>
+        <span>☘️ LEPRECHAUN KING</span><span class="sep">✦</span>
+        <span>🏀 HOOPS</span><span class="sep">✦</span>
+        <span>🌊 SPRING BREAK</span><span class="sep">✦</span>
+        <span>LOWEST POINTS WINS</span><span class="sep">✦</span>
+        <span>1ST = 0 PTS · 2ND = 2 PTS · 3RD = 3 PTS</span><span class="sep">✦</span>
+        <span>🌀 WHIRLWIND</span><span class="sep">✦</span>
+        <span>☘️ LEPRECHAUN KING</span><span class="sep">✦</span>
+        <span>🏀 HOOPS</span><span class="sep">✦</span>
+        <span>🌊 SPRING BREAK</span><span class="sep">✦</span>
+        <span>LOWEST POINTS WINS</span><span class="sep">✦</span>
+        <span>1ST = 0 PTS · 2ND = 2 PTS · 3RD = 3 PTS</span><span class="sep">✦</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav>
+    <button class="tab-btn active" onclick="switchTab('register')">☘ REGISTER</button>
+    <button class="tab-btn" onclick="switchTab('score')">🎯 SCORES</button>
+    <button class="tab-btn" onclick="switchTab('boards')">🏆 BOARDS</button>
+    <button class="tab-btn" onclick="promptSetupPassword()">⚙ SETUP</button>
+  </nav>
+
+  <!-- ═══════════════════════════════════════
+       SCREEN: REGISTER / LOGIN
+  ════════════════════════════════════════ -->
+  <div id="screen-register" class="screen active">
+
+    <!-- Logged-in greeting -->
+    <div id="logged-in-panel" class="panel" style="display:none;text-align:center;">
+      <div class="panel-title" style="justify-content:center;">🎮 PLAYER ACTIVE</div>
+      <div id="logged-in-name" style="font-family:'VT323',monospace;font-size:42px;color:var(--gold);text-shadow:0 0 16px var(--gold);letter-spacing:4px;margin:8px 0 4px;"></div>
+      <div style="font-family:'VT323',monospace;font-size:18px;color:var(--green);letter-spacing:2px;margin-bottom:20px;">YOU ARE LOGGED IN ✓</div>
+      <button class="btn btn-green btn-full" onclick="goToScores()" style="margin-bottom:10px;">🎯 GO SUBMIT A SCORE</button>
+      <button class="btn btn-cyan btn-full" onclick="logOut()" style="font-size:8px;">↩ SWITCH PLAYER</button>
+    </div>
+
+    <!-- New player registration -->
+    <div id="register-panel" class="panel">
+      <div class="panel-title">☘ NEW PLAYER? REGISTER HERE</div>
+      <p class="help-text">First time? Enter your name below to join the tournament.</p>
+      <label>YOUR NAME</label>
+      <input type="text" id="reg-name" placeholder="ENTER YOUR NAME" maxlength="24" autocomplete="off"
+        onkeydown="if(event.key==='Enter')registerPlayer()">
+      <button class="btn btn-green btn-full" onclick="registerPlayer()">▶ JOIN TOURNAMENT</button>
+    </div>
+
+    <!-- Returning players tap to log in -->
+    <div class="panel" id="player-list-panel">
+      <div class="panel-title">🕹 RETURNING PLAYER? TAP YOUR NAME</div>
+      <div id="player-list-body"></div>
+    </div>
+
+    <div class="insert-coin">— INSERT COIN —</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SCREEN: SCORE ENTRY
+  ════════════════════════════════════════ -->
+  <div id="screen-score" class="screen">
+
+    <!-- Not logged in warning -->
+    <div id="score-no-player" class="panel" style="display:none;text-align:center;">
+      <div class="panel-title" style="justify-content:center;color:var(--pink)">⚠ NOT LOGGED IN</div>
+      <p class="help-text" style="text-align:center;margin-bottom:20px;">You need to register or log in first!</p>
+      <button class="btn btn-green btn-full" onclick="switchTab('register');document.querySelectorAll('.tab-btn')[0].classList.add('active');document.querySelectorAll('.tab-btn')[1].classList.remove('active');">☘ GO TO REGISTER</button>
+    </div>
+
+    <!-- Score entry form (shown when logged in) -->
+    <div id="score-form-panel" class="panel">
+      <!-- Player banner -->
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#06061a;border:2px solid var(--green);padding:12px 16px;margin-bottom:20px;box-shadow:0 0 12px var(--green)33;">
+        <div>
+          <div style="font-size:8px;color:var(--dim);letter-spacing:1px;margin-bottom:4px;">PLAYING AS</div>
+          <div id="score-player-name" style="font-family:'VT323',monospace;font-size:30px;color:var(--gold);text-shadow:0 0 10px var(--gold);letter-spacing:3px;"></div>
+        </div>
+        <button class="btn btn-cyan" onclick="logOut();switchTab('register');document.querySelectorAll('.tab-btn')[0].classList.add('active');document.querySelectorAll('.tab-btn')[1].classList.remove('active');" style="font-size:7px;padding:8px 10px;">↩ SWITCH</button>
+      </div>
+
+      <div class="panel-title">🎯 SUBMIT SCORE</div>
+      <p class="help-text">Tap a machine, enter your score, and fire away! Only your personal best counts.</p>
+
+      <label>SELECT MACHINE</label>
+      <div class="table-grid">
+        <div class="table-card" data-table="whirlwind" onclick="selectTable('whirlwind', this)">
+          <img src="https://i.imgur.com/gCmfggs.png" style="width:88px;height:88px;object-fit:contain;display:block;margin:0 auto 6px;border-radius:50%;box-shadow:0 0 12px #00e5ff66;">WHIRLWIND
+        </div>
+        <div class="table-card" data-table="leprechaun" onclick="selectTable('leprechaun', this)">
+          <img src="https://i.imgur.com/KYx7z9t.png" style="width:88px;height:88px;object-fit:contain;display:block;margin:0 auto 6px;border-radius:50%;box-shadow:0 0 12px #00ff6666;">LEPRECHAUN KING
+        </div>
+        <div class="table-card" data-table="hoops" onclick="selectTable('hoops', this)">
+          <img src="https://i.imgur.com/kguYCOh.png" style="width:88px;height:88px;object-fit:contain;display:block;margin:0 auto 6px;border-radius:50%;box-shadow:0 0 12px #ff8c0066;">HOOPS
+        </div>
+        <div class="table-card" data-table="springbreak" onclick="selectTable('springbreak', this)">
+          <img src="https://i.imgur.com/1I13Vwr.png" style="width:88px;height:88px;object-fit:contain;display:block;margin:0 auto 6px;border-radius:50%;box-shadow:0 0 12px #ff008066;">SPRING BREAK
+        </div>
+      </div>
+
+      <label>YOUR SCORE</label>
+      <input type="number" id="score-val" placeholder="00000000" min="0" max="99999999">
+
+      <button class="btn btn-pink btn-full" onclick="submitScore()">▶ SUBMIT SCORE</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SCREEN: LEADERBOARDS
+  ════════════════════════════════════════ -->
+  <div id="screen-boards" class="screen">
+    <div class="sub-tabs">
+      <button class="sub-tab active" onclick="switchLb('overall')">🏆 OVERALL</button>
+      <button class="sub-tab" onclick="switchLb('whirlwind')">🌀 WHIRLWIND</button>
+      <button class="sub-tab" onclick="switchLb('leprechaun')">☘️ LEPRECHAUN</button>
+      <button class="sub-tab" onclick="switchLb('hoops')">🏀 HOOPS</button>
+      <button class="sub-tab" onclick="switchLb('springbreak')">🌊 SPRING BRK</button>
+    </div>
+
+    <!-- Overall -->
+    <div id="lb-overall" class="lb-screen active">
+      <div class="panel">
+        <div class="panel-title">🏆 TOURNAMENT STANDINGS — MARCH 2026</div>
+        <p class="help-text">Lower points = better rank. 1st on a machine = 0 pts. 2nd = 2 pts. 3rd = 3 pts. etc.</p>
+        <div id="lb-overall-body"></div>
+      </div>
+    </div>
+
+    <!-- Per-table boards -->
+    <div id="lb-whirlwind" class="lb-screen">
+      <div class="panel" style="border-color:#00e5ff44;">
+        <div class="panel-title" style="color:var(--ww)">🌀 WHIRLWIND — HIGH SCORES</div>
+        <div id="lb-ww-body"></div>
+      </div>
+    </div>
+
+    <div id="lb-leprechaun" class="lb-screen">
+      <div class="panel" style="border-color:#00ff6644;">
+        <div class="panel-title" style="color:var(--lk)">☘️ LEPRECHAUN KING — HIGH SCORES</div>
+        <div id="lb-lk-body"></div>
+      </div>
+    </div>
+
+    <div id="lb-hoops" class="lb-screen">
+      <div class="panel" style="border-color:#ff8c0044;">
+        <div class="panel-title" style="color:var(--ho)">🏀 HOOPS — HIGH SCORES</div>
+        <div id="lb-ho-body"></div>
+      </div>
+    </div>
+
+    <div id="lb-springbreak" class="lb-screen">
+      <div class="panel" style="border-color:#ff008044;">
+        <div class="panel-title" style="color:var(--sb)">🌊 SPRING BREAK — HIGH SCORES</div>
+        <div id="lb-sb-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       SCREEN: SETUP
+  ════════════════════════════════════════ -->
+  <div id="screen-setup" class="screen">
+    <div class="panel">
+      <div class="panel-title">⚙ GOOGLE SHEETS INTEGRATION</div>
+      <p class="help-text">Follow these steps to sync tournament data with Google Sheets. Scores are ALWAYS saved locally — Sheets sync is optional.</p>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <p>Go to <strong style="color:var(--green)">sheets.google.com</strong> and create a new spreadsheet. Name it "Lord's Arcade Pinball 2026". It will need these sheets (tabs): <strong style="color:var(--cyan)">Players, Scores</strong></p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <p>In the spreadsheet, click <strong style="color:var(--green)">Extensions → Apps Script</strong>. Delete any existing code and paste the code below, then click Save (💾) and Deploy → New deployment → Web App → Execute as: Me → Who has access: Anyone → Deploy. Copy the web app URL.</p>
+      </div>
+
+      <label>APPS SCRIPT CODE (copy this into Apps Script editor)</label>
+      <div class="code-block" id="apps-script-code"></div>
+      <button class="btn btn-cyan" onclick="copyAppsScript()">📋 COPY APPS SCRIPT CODE</button>
+
+      <div class="divider"></div>
+
+      <label>PASTE YOUR APPS SCRIPT WEB APP URL HERE</label>
+      <input type="text" id="sheets-url" placeholder="https://script.google.com/macros/s/..." style="font-size:13px;letter-spacing:0">
+      <button class="btn btn-green btn-full" onclick="saveSheetUrl()">▶ SAVE & TEST CONNECTION</button>
+    </div>
+
+    <!-- Score Management -->
+    <div class="panel">
+      <div class="panel-title" style="color:var(--gold)">🗑 SCORE MANAGEMENT</div>
+      <div style="background:#1a0a00;border:2px solid var(--orange);padding:12px 14px;margin-bottom:14px;">
+        <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--orange);margin-bottom:6px;">⚠ IMPORTANT</div>
+        <div style="font-family:'VT323',monospace;font-size:17px;color:#ffb366;line-height:1.6;">
+          Deleting scores directly from the Google Sheet will NOT update this scoreboard.<br>
+          Always use the 🗑 DEL buttons below — they delete from BOTH this scoreboard and the sheet at the same time.
+        </div>
+      </div>
+      <p class="help-text">Filter by machine and/or player, then click 🗑 DEL to remove a score from both the local scoreboard and the Google Sheet.</p>
+
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:120px;">
+          <label>FILTER BY MACHINE</label>
+          <select id="del-table-filter" onchange="renderDeleteScores()" style="margin-bottom:0;">
+            <option value="">ALL MACHINES</option>
+            <option value="whirlwind">🌀 WHIRLWIND</option>
+            <option value="leprechaun">☘️ LEPRECHAUN KING</option>
+            <option value="hoops">🏀 HOOPS</option>
+            <option value="springbreak">🌊 SPRING BREAK</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:120px;">
+          <label>FILTER BY PLAYER</label>
+          <select id="del-player-filter" onchange="renderDeleteScores()" style="margin-bottom:0;">
+            <option value="">ALL PLAYERS</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="del-scores-body"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title" style="color:var(--pink)">⚠ DANGER ZONE</div>
+      <p class="help-text" style="color:var(--pink)">This will permanently delete ALL local tournament data. This cannot be undone.</p>
+      <button class="btn btn-pink btn-full" onclick="clearData()">✕ CLEAR ALL LOCAL DATA</button>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<!-- PASSWORD MODAL -->
+<div id="pw-overlay" style="display:none;position:fixed;inset:0;z-index:20000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;">
+  <div style="background:#0a0a18;border:2px solid #ffd700;padding:36px 32px;max-width:380px;width:90%;text-align:center;box-shadow:0 0 40px #ffd70044;position:relative;">
+    <div style="font-family:'Press Start 2P',monospace;font-size:13px;color:#ffd700;text-shadow:0 0 10px #ffd700;margin-bottom:6px;">⚙ SETUP ACCESS</div>
+    <div style="font-family:'VT323',monospace;font-size:18px;color:#5a5a8a;margin-bottom:20px;letter-spacing:2px;">AUTHORIZED PERSONNEL ONLY</div>
+    <input type="password" id="pw-input" placeholder="ENTER PASSWORD"
+      style="font-family:'VT323',monospace;font-size:24px;background:#06061a;border:2px solid #1e1e3f;color:#00ff66;padding:10px 14px;width:100%;margin-bottom:14px;outline:none;letter-spacing:4px;text-align:center;"
+      onkeydown="if(event.key==='Enter')checkSetupPw()">
+    <div id="pw-error" style="font-family:'VT323',monospace;font-size:18px;color:#ff0080;text-shadow:0 0 8px #ff0080;margin-bottom:12px;min-height:22px;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-green" style="flex:1;font-size:9px;padding:12px;" onclick="checkSetupPw()">▶ ENTER</button>
+      <button class="btn btn-pink"  style="flex:1;font-size:9px;padding:12px;" onclick="closePwModal()">✕ CANCEL</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+
+// ═══════════════════════════════════════════════════════
+//  CONFIGURATION
+// ═══════════════════════════════════════════════════════
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw6pquHHLQy9MkgFEM_dGsSCMog0dZ91ZN4PbZnSI6FbRpMx8oTEfWpGqiVJu0VJMsp/exec';
+
+const TABLES = [
+  { id: 'whirlwind',   name: 'Whirlwind',       emoji: '🌀', color: '#00e5ff' },
+  { id: 'leprechaun',  name: 'Leprechaun King',  emoji: '☘️', color: '#00ff66' },
+  { id: 'hoops',       name: 'Hoops',            emoji: '🏀', color: '#ff8c00' },
+  { id: 'springbreak', name: 'Spring Break',     emoji: '🌊', color: '#ff0080' },
+];
+
+// ═══════════════════════════════════════════════════════
+//  API — ALL DATA LIVES IN GOOGLE SHEETS
+// ═══════════════════════════════════════════════════════
+async function apiCall(params) {
+  const url = SHEETS_URL + '?' + new URLSearchParams(params).toString();
+  try {
+    const res = await fetch(url);
+    return await res.json();
+  } catch (e) {
+    console.error('API error:', e);
+    return { status: 'error', msg: e.toString() };
+  }
+}
+
+// Fetch all players + best scores in one call
+async function fetchData() {
+  return await apiCall({ action: 'get_data' });
+}
+
+// ═══════════════════════════════════════════════════════
+//  SESSION — who is logged in right now (memory only)
+// ═══════════════════════════════════════════════════════
+let currentPlayer = null;
+
+function logIn(name) {
+  currentPlayer = name;
+  document.getElementById('logged-in-panel').style.display = '';
+  document.getElementById('register-panel').style.display = 'none';
+  document.getElementById('logged-in-name').textContent = name;
+  document.getElementById('score-player-name').textContent = name;
+  document.getElementById('score-no-player').style.display = 'none';
+  document.getElementById('score-form-panel').style.display = '';
+  renderPlayerList();
+}
+
+function logOut() {
+  currentPlayer = null;
+  document.getElementById('logged-in-panel').style.display = 'none';
+  document.getElementById('register-panel').style.display = '';
+  document.getElementById('score-no-player').style.display = 'none';
+  document.getElementById('score-form-panel').style.display = '';
+  renderPlayerList();
+}
+
+function goToScores() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-score').classList.add('active');
+  document.querySelectorAll('.tab-btn')[1].classList.add('active');
+}
+
+// ═══════════════════════════════════════════════════════
+//  LOADING HELPER
+// ═══════════════════════════════════════════════════════
+function loadingHTML(msg) {
+  return `<div class="empty" style="color:var(--cyan);">
+    <div style="animation:blink 1s infinite;">⏳ ${msg || 'LOADING...'}</div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════
+//  REGISTER PLAYER
+// ═══════════════════════════════════════════════════════
+async function registerPlayer() {
+  const raw = document.getElementById('reg-name').value.trim().toUpperCase();
+  if (!raw) { toast('ENTER A NAME', true); return; }
+  if (raw.length < 2) { toast('NAME TOO SHORT', true); return; }
+
+  const btn = document.querySelector('#register-panel .btn-green');
+  btn.textContent = '⏳ SAVING...';
+  btn.disabled = true;
+
+  // Check if player already exists
+  const data = await fetchData();
+  const players = data.players || [];
+
+  if (players.map(p => p.toUpperCase()).includes(raw)) {
+    toast('WELCOME BACK, ' + raw + '!');
+    logIn(raw);
+    document.getElementById('reg-name').value = '';
+    btn.textContent = '▶ JOIN TOURNAMENT';
+    btn.disabled = false;
+    return;
+  }
+
+  const result = await apiCall({ action: 'register', name: raw, timestamp: new Date().toISOString() });
+  btn.textContent = '▶ JOIN TOURNAMENT';
+  btn.disabled = false;
+
+  if (result.status === 'ok') {
+    document.getElementById('reg-name').value = '';
+    toast('🎉 WELCOME TO THE TOURNAMENT, ' + raw + '!');
+    logIn(raw);
+    renderPlayerList();
+  } else {
+    toast('ERROR REGISTERING — CHECK CONNECTION', true);
+  }
+}
+
+async function renderPlayerList() {
+  const el = document.getElementById('player-list-body');
+  el.innerHTML = loadingHTML('FETCHING PLAYERS...');
+
+  const data = await fetchData();
+  const players = data.players || [];
+  const scores  = data.scores  || {};
+
+  if (!players.length) {
+    el.innerHTML = '<div class="empty">NO PLAYERS YET — BE THE FIRST!</div>';
+    return;
+  }
+
+  el.innerHTML = players.map(p => {
+    const played = TABLES.filter(t => scores[t.id] && scores[t.id][p] !== undefined).length;
+    const isActive  = p === currentPlayer;
+    const activeStyle = isActive ? 'border-color:var(--gold);box-shadow:0 0 14px #ffd70044;background:#0d0d22;' : '';
+    const activeTxt   = isActive ? ' <span style="color:var(--gold);font-size:14px;">● ACTIVE</span>' : '';
+    return `<div onclick="logIn('${p}')" style="display:flex;align-items:center;justify-content:space-between;
+      padding:12px 14px;margin-bottom:8px;border:2px solid var(--border);cursor:pointer;
+      background:#06061a;transition:all .2s;${activeStyle}"
+      onmouseover="if('${p}'!==currentPlayer)this.style.borderColor='var(--cyan)'"
+      onmouseout="if('${p}'!==currentPlayer)this.style.borderColor='var(--border)'">
+      <div>
+        <div style="font-family:'VT323',monospace;font-size:26px;color:var(--text);letter-spacing:2px;">${p}${activeTxt}</div>
+        <div style="font-family:'VT323',monospace;font-size:15px;color:var(--dim);">${played} / 4 MACHINES PLAYED</div>
+      </div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--cyan);">TAP ▶</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCORE ENTRY
+// ═══════════════════════════════════════════════════════
+let selectedTable = null;
+
+function selectTable(id, el) {
+  selectedTable = id;
+  document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitScore() {
+  if (!currentPlayer) { toast('LOG IN FIRST!', true); return; }
+  if (!selectedTable)  { toast('SELECT A MACHINE FIRST', true); return; }
+  const raw   = document.getElementById('score-val').value.trim();
+  const score = parseInt(raw);
+  if (!raw || isNaN(score) || score < 0) { toast('ENTER A VALID SCORE', true); return; }
+
+  const btn = document.querySelector('#score-form-panel .btn-pink');
+  btn.textContent = '⏳ SAVING...';
+  btn.disabled = true;
+
+  // Check existing best from sheet
+  const data  = await fetchData();
+  const tableScores = (data.scores || {})[selectedTable] || {};
+  const prev  = tableScores[currentPlayer];
+
+  if (prev !== undefined && score <= prev) {
+    toast('YOUR BEST IS ALREADY ' + prev.toLocaleString() + '!', true);
+    btn.textContent = '▶ SUBMIT SCORE';
+    btn.disabled = false;
+    return;
+  }
+
+  const result = await apiCall({
+    action: 'score',
+    player: currentPlayer,
+    table: selectedTable,
+    score: score,
+    timestamp: new Date().toISOString()
+  });
+
+  btn.textContent = '▶ SUBMIT SCORE';
+  btn.disabled = false;
+
+  if (result.status === 'ok') {
+    const isNew = prev === undefined;
+    toast(isNew ? '🎉 SCORE POSTED: ' + score.toLocaleString() : '🔥 NEW PERSONAL BEST: ' + score.toLocaleString());
+    document.getElementById('score-val').value = '';
+    document.getElementById('score-val').focus();
+  } else {
+    toast('ERROR SAVING SCORE — CHECK CONNECTION', true);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCORING ALGORITHM
+//  1st = 0 pts, 2nd = 2 pts, 3rd = 3 pts, 4th = 4 pts…
+// ═══════════════════════════════════════════════════════
+function pointsForRank(rank) {
+  if (rank === 0) return 0;
+  return rank + 1;
+}
+
+function calcOverallStandings(players, scores) {
+  const playerData = {};
+  players.forEach(p => {
+    playerData[p] = { player: p, totalPoints: 0, tablesPlayed: 0, tablePoints: {} };
+    TABLES.forEach(t => { playerData[p].tablePoints[t.id] = null; });
+  });
+
+  TABLES.forEach(t => {
+    const tableScores = scores[t.id] || {};
+    const sorted = Object.entries(tableScores)
+      .map(([player, score]) => ({ player, score }))
+      .sort((a, b) => b.score - a.score);
+
+    sorted.forEach((entry, idx) => {
+      if (!playerData[entry.player]) return;
+      const pts = pointsForRank(idx);
+      playerData[entry.player].totalPoints += pts;
+      playerData[entry.player].tablesPlayed++;
+      playerData[entry.player].tablePoints[t.id] = { score: entry.score, pts, rank: idx + 1 };
+    });
+  });
+
+  return Object.values(playerData)
+    .filter(p => p.tablesPlayed > 0)
+    .sort((a, b) => {
+      if (a.totalPoints !== b.totalPoints) return a.totalPoints - b.totalPoints;
+      return b.tablesPlayed - a.tablesPlayed;
+    });
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER LEADERBOARDS
+// ═══════════════════════════════════════════════════════
+async function renderAllBoards() {
+  // Show loading in all board bodies
+  ['lb-overall-body','lb-ww-body','lb-lk-body','lb-ho-body','lb-sb-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = loadingHTML();
+  });
+
+  const data    = await fetchData();
+  const players = data.players || [];
+  const scores  = data.scores  || {};
+
+  renderOverall(players, scores);
+  TABLES.forEach(t => renderTableBoard(t, scores));
+}
+
+function renderOverall(players, scores) {
+  const standings = calcOverallStandings(players, scores);
+  const el = document.getElementById('lb-overall-body');
+  if (!standings.length) { el.innerHTML = '<div class="empty">NO SCORES YET — GET PLAYING!</div>'; return; }
+
+  let html = '<table class="score-table"><thead><tr>' +
+    '<th>RANK</th><th>PLAYER</th>' +
+    TABLES.map(t => `<th>${t.emoji}</th>`).join('') +
+    '<th>TOTAL PTS</th></tr></thead><tbody>';
+
+  standings.forEach((row, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+    const crown = i === 0 ? ' 👑' : '';
+    html += `<tr class="${rankClass}">`;
+    html += `<td class="rank-cell">#${i+1}</td>`;
+    html += `<td class="player-name">${row.player}${crown}</td>`;
+    TABLES.forEach(t => {
+      const td = row.tablePoints[t.id];
+      if (!td) { html += `<td style="color:var(--dim)">—</td>`; }
+      else {
+        const ptClass = td.pts === 0 ? 'pts-0' : td.pts <= 3 ? 'pts-lo' : 'pts-hi';
+        html += `<td><span class="pts-badge ${ptClass}">${td.pts}pt</span></td>`;
+      }
+    });
+    const ptClass = standings[0].totalPoints === row.totalPoints ? 'pts-0' : row.totalPoints <= 6 ? 'pts-lo' : 'pts-hi';
+    html += `<td><span class="pts-badge ${ptClass}">${row.totalPoints}</span></td>`;
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+function renderTableBoard(table, scores) {
+  const tableScores = scores[table.id] || {};
+  const rankings = Object.entries(tableScores)
+    .map(([player, score]) => ({ player, score }))
+    .sort((a, b) => b.score - a.score);
+
+  const ids = { whirlwind: 'lb-ww-body', leprechaun: 'lb-lk-body', hoops: 'lb-ho-body', springbreak: 'lb-sb-body' };
+  const el = document.getElementById(ids[table.id]);
+  if (!el) return;
+
+  if (!rankings.length) { el.innerHTML = '<div class="empty">NO SCORES YET</div>'; return; }
+
+  let html = '<table class="score-table"><thead><tr>' +
+    '<th>RANK</th><th>PLAYER</th><th>BEST SCORE</th><th>POINTS</th>' +
+    '</tr></thead><tbody>';
+
+  rankings.forEach((row, i) => {
+    const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : '';
+    const pts = pointsForRank(i);
+    const ptClass = pts === 0 ? 'pts-0' : pts <= 3 ? 'pts-lo' : 'pts-hi';
+    const crown = i === 0 ? ' 👑' : '';
+    html += `<tr class="${rankClass}">
+      <td class="rank-cell">#${i+1}</td>
+      <td class="player-name">${row.player}${crown}</td>
+      <td class="score-num">${row.score.toLocaleString()}</td>
+      <td><span class="pts-badge ${ptClass}">${pts} PTS</span></td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  SCORE MANAGEMENT (DELETE)
+// ═══════════════════════════════════════════════════════
+async function renderDeleteScores() {
+  const el = document.getElementById('del-scores-body');
+  if (!el) return;
+  el.innerHTML = loadingHTML('FETCHING SCORES...');
+
+  // Populate player filter
+  const data    = await fetchData();
+  const players = data.players || [];
+  const scores  = data.scores  || {};
+
+  const sel = document.getElementById('del-player-filter');
+  if (sel) {
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">ALL PLAYERS</option>' +
+      players.map(p => `<option value="${p}"${p===cur?' selected':''}>${p}</option>`).join('');
+  }
+
+  const tableFilter  = document.getElementById('del-table-filter')  ? document.getElementById('del-table-filter').value  : '';
+  const playerFilter = sel ? sel.value : '';
+
+  let rows = [];
+  TABLES.forEach(t => {
+    if (tableFilter && t.id !== tableFilter) return;
+    const ts = scores[t.id] || {};
+    Object.entries(ts).forEach(([player, score]) => {
+      if (playerFilter && player !== playerFilter) return;
+      rows.push({ tableId: t.id, tableName: t.name, tableEmoji: t.emoji, player, score });
+    });
+  });
+
+  rows.sort((a, b) => a.player.localeCompare(b.player) || a.tableId.localeCompare(b.tableId));
+
+  if (!rows.length) { el.innerHTML = '<div class="empty">NO SCORES MATCH YOUR FILTERS</div>'; return; }
+
+  const tableColors = { whirlwind: '#00e5ff', leprechaun: '#00ff66', hoops: '#ff8c00', springbreak: '#ff0080' };
+
+  const grouped = {};
+  rows.forEach(r => { if (!grouped[r.player]) grouped[r.player] = []; grouped[r.player].push(r); });
+
+  let html = '';
+  Object.entries(grouped).forEach(([player, playerRows]) => {
+    html += `<div style="margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        background:#0d0d22;border:2px solid #2a2a50;padding:8px 14px;margin-bottom:4px;">
+        <div style="font-family:'VT323',monospace;font-size:24px;color:var(--gold);
+          text-shadow:0 0 8px #ffd70066;letter-spacing:2px;">👤 ${player}</div>
+        <button onclick="deleteAllScoresForPlayer('${player}')"
+          style="font-family:'Press Start 2P',monospace;font-size:7px;padding:6px 10px;
+          background:transparent;border:1px solid var(--orange);color:var(--orange);cursor:pointer;"
+          onmouseover="this.style.background='#ff8c0022'"
+          onmouseout="this.style.background='transparent'">🗑 ALL</button>
+      </div>`;
+    playerRows.forEach(r => {
+      const tc = tableColors[r.tableId] || '#fff';
+      html += `<div style="display:flex;align-items:center;justify-content:space-between;
+        padding:9px 14px;margin-bottom:3px;border:1px solid #1a1a38;background:#06061a;border-left:3px solid ${tc};">
+        <div>
+          <span style="font-family:'VT323',monospace;font-size:17px;color:${tc};letter-spacing:1px;">${r.tableEmoji} ${r.tableName.toUpperCase()}</span>
+          <span style="font-family:'VT323',monospace;font-size:20px;color:var(--cyan);margin-left:12px;letter-spacing:2px;">${r.score.toLocaleString()}</span>
+        </div>
+        <button onclick="deleteScore('${r.tableId}','${r.player}')"
+          style="font-family:'Press Start 2P',monospace;font-size:7px;padding:7px 10px;
+          background:transparent;border:1px solid var(--pink);color:var(--pink);cursor:pointer;flex-shrink:0;margin-left:10px;"
+          onmouseover="this.style.background='#ff008022'"
+          onmouseout="this.style.background='transparent'">🗑 DEL</button>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+async function deleteScore(tableId, player) {
+  const tableName = TABLES.find(t => t.id === tableId)?.name || tableId;
+  if (!confirm('Delete ' + player + "'s score on " + tableName + '?\nThis removes it from Google Sheets.')) return;
+
+  toast('⏳ DELETING...');
+  const result = await apiCall({ action: 'delete_score', player, table: tableId });
+
+  if (result.status === 'ok') {
+    toast('🗑 DELETED — ' + player + ' / ' + tableName.toUpperCase());
+    renderDeleteScores();
+    renderAllBoards();
+  } else {
+    toast('ERROR DELETING — CHECK CONNECTION', true);
+  }
+}
+
+async function deleteAllScoresForPlayer(player) {
+  if (!confirm('Delete ALL scores for ' + player + '?\nThis removes them all from Google Sheets.')) return;
+
+  toast('⏳ DELETING...');
+  // Delete each table's score for this player
+  for (const t of TABLES) {
+    await apiCall({ action: 'delete_score', player, table: t.id });
+  }
+  toast('🗑 ALL SCORES DELETED FOR ' + player);
+  renderDeleteScores();
+  renderAllBoards();
+}
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + tab).classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  if (tab === 'boards') renderAllBoards();
+  if (tab === 'register') renderPlayerList();
+  if (tab === 'setup') renderDeleteScores();
+  if (tab === 'score') {
+    if (currentPlayer) {
+      document.getElementById('score-no-player').style.display = 'none';
+      document.getElementById('score-form-panel').style.display = '';
+    } else {
+      document.getElementById('score-no-player').style.display = '';
+      document.getElementById('score-form-panel').style.display = 'none';
+    }
+  }
+}
+
+function switchLb(id) {
+  document.querySelectorAll('.lb-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sub-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('lb-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  renderAllBoards();
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg, err = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (err ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+
+// ═══════════════════════════════════════════════════════
+//  APPS SCRIPT CODE (for display in Setup)
+// ═══════════════════════════════════════════════════════
+const APPS_SCRIPT = `// Lord's Arcade Pinball Tournament 2026
+// Deploy as Web App: Execute as Me, Access: Anyone
+
+function doGet(e) {
+  try {
+    var action = e.parameter ? e.parameter.action : '';
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // ── GET ALL DATA (players + best scores) ──
+    if (action === 'get_data') {
+      var players = [];
+      var pSheet = ss.getSheetByName('Players');
+      if (pSheet && pSheet.getLastRow() > 1) {
+        var pData = pSheet.getRange(2, 2, pSheet.getLastRow() - 1, 1).getValues();
+        var seen = {};
+        pData.forEach(function(row) {
+          var name = String(row[0]).toUpperCase().trim();
+          if (name && !seen[name]) { seen[name] = true; players.push(name); }
+        });
+      }
+      var scores = {};
+      var sSheet = ss.getSheetByName('Scores');
+      if (sSheet && sSheet.getLastRow() > 1) {
+        var sData = sSheet.getRange(2, 1, sSheet.getLastRow() - 1, 4).getValues();
+        sData.forEach(function(row) {
+          var player = String(row[1]).toUpperCase().trim();
+          var table  = String(row[2]).toLowerCase().trim();
+          var score  = parseInt(row[3]) || 0;
+          if (!player || !table) return;
+          if (!scores[table]) scores[table] = {};
+          if (!scores[table][player] || score > scores[table][player]) {
+            scores[table][player] = score;
+          }
+        });
+      }
+      return out({ status: 'ok', players: players, scores: scores });
+    }
+
+    // ── REGISTER PLAYER ──
+    if (action === 'register') {
+      var pSheet = ss.getSheetByName('Players') || ss.insertSheet('Players');
+      if (pSheet.getLastRow() === 0) pSheet.appendRow(['Timestamp', 'Player Name']);
+      pSheet.appendRow([e.parameter.timestamp, e.parameter.name]);
+      return out({ status: 'ok' });
+    }
+
+    // ── SUBMIT SCORE ──
+    if (action === 'score') {
+      var sSheet = ss.getSheetByName('Scores') || ss.insertSheet('Scores');
+      if (sSheet.getLastRow() === 0) sSheet.appendRow(['Timestamp', 'Player', 'Machine', 'Score']);
+      sSheet.appendRow([e.parameter.timestamp, e.parameter.player, e.parameter.table, parseInt(e.parameter.score)]);
+      return out({ status: 'ok' });
+    }
+
+    // ── DELETE SCORE (player + machine) ──
+    if (action === 'delete_score') {
+      var sSheet = ss.getSheetByName('Scores');
+      if (sSheet && sSheet.getLastRow() > 1) {
+        var rows = sSheet.getDataRange().getValues();
+        for (var i = rows.length - 1; i >= 1; i--) {
+          if (String(rows[i][1]).toUpperCase() === String(e.parameter.player).toUpperCase() &&
+              String(rows[i][2]).toLowerCase() === String(e.parameter.table).toLowerCase()) {
+            sSheet.deleteRow(i + 1);
+          }
+        }
+      }
+      return out({ status: 'ok' });
+    }
+
+    return out({ status: 'ok', message: "Lords Arcade API" });
+
+  } catch(err) {
+    return out({ status: 'error', msg: err.toString() });
+  }
+}
+
+function out(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+// ═══════════════════════════════════════════════════════
+//  SETUP PASSWORD GATE
+// ═══════════════════════════════════════════════════════
+const SETUP_PASSWORD = 'MadisonRam2!';
+let setupUnlocked = false;
+
+function promptSetupPassword() {
+  if (setupUnlocked) {
+    switchTab('setup');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn')[3].classList.add('active');
+    return;
+  }
+  const overlay = document.getElementById('pw-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('pw-error').textContent = '';
+  setTimeout(() => document.getElementById('pw-input').focus(), 50);
+}
+
+function checkSetupPw() {
+  const val = document.getElementById('pw-input').value;
+  if (val === SETUP_PASSWORD) {
+    setupUnlocked = true;
+    closePwModal();
+    switchTab('setup');
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-btn')[3].classList.add('active');
+    toast('✓ SETUP UNLOCKED');
+  } else {
+    const err = document.getElementById('pw-error');
+    err.textContent = '✕ INCORRECT PASSWORD';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').style.borderColor = '#ff0080';
+    setTimeout(() => {
+      err.textContent = '';
+      document.getElementById('pw-input').style.borderColor = '#1e1e3f';
+    }, 2000);
+  }
+}
+
+function closePwModal() {
+  document.getElementById('pw-overlay').style.display = 'none';
+}
+
+function copyAppsScript() {
+  const code = document.getElementById('apps-script-code').innerText;
+  navigator.clipboard.writeText(code)
+    .then(() => toast('APPS SCRIPT CODE COPIED!'))
+    .catch(() => toast('SELECT AND COPY THE CODE MANUALLY', true));
+}
+
+// ═══════════════════════════════════════════════════════
+//  VISUAL EFFECTS
+// ═══════════════════════════════════════════════════════
+function buildLights() {
+  const wrap = document.getElementById('lights');
+  const colors = ['b-g','b-p','b-c','b-o','b-g','b-c','b-p','b-o','b-g','b-p','b-c','b-o','b-g','b-c','b-p','b-o','b-g','b-p','b-c','b-o'];
+  wrap.innerHTML = colors.map(c => `<div class="bulb ${c}"></div>`).join('');
+}
+
+function buildShamrocks() {
+  const container = document.getElementById('shamrocks');
+  const chars = ['☘','☘','🍀','☘','☘','🌸','☘'];
+  for (let i = 0; i < 14; i++) {
+    const el = document.createElement('div');
+    el.className = 'shamrock';
+    el.textContent = chars[i % chars.length];
+    el.style.left = (Math.random() * 100) + 'vw';
+    el.style.animationDuration = (12 + Math.random() * 18) + 's';
+    el.style.animationDelay = (-Math.random() * 20) + 's';
+    el.style.fontSize = (16 + Math.random() * 20) + 'px';
+    container.appendChild(el);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  buildLights();
+  buildShamrocks();
+  renderPlayerList();
+
+  document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
+
+  // Score screen initial state
+  document.getElementById('score-no-player').style.display = 'none';
+  document.getElementById('score-form-panel').style.display = '';
+
+  // Konami code easter egg
+  let konami = [];
+  const code = [38,38,40,40,37,39,37,39,66,65];
+  document.addEventListener('keydown', e => {
+    konami.push(e.keyCode);
+    if (konami.length > 10) konami.shift();
+    if (konami.join() === code.join()) {
+      toast('🎉 PARTY MODE ACTIVATED! ☘️🎯🏆');
+      for (let i = 0; i < 30; i++) {
+        setTimeout(() => {
+          const el = document.createElement('div');
+          el.style.cssText = `position:fixed;left:${Math.random()*100}vw;top:${Math.random()*100}vh;font-size:${20+Math.random()*30}px;pointer-events:none;z-index:99999;animation:fadeIn 2s forwards;`;
+          el.textContent = ['🎯','☘️','🏆','🌀','🏀','🌊','💥','⚡','🔥'][Math.floor(Math.random()*9)];
+          document.body.appendChild(el);
+          setTimeout(() => el.remove(), 2000);
+        }, i * 80);
+      }
+    }
+  });
+});
+</script>
+</body>
+</html>
