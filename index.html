@@ -853,8 +853,10 @@
 // ═══════════════════════════════════════════════════════
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw6pquHHLQy9MkgFEM_dGsSCMog0dZ91ZN4PbZnSI6FbRpMx8oTEfWpGqiVJu0VJMsp/exec';
 
-// ── AI SCORE SCANNING via Google Apps Script proxy ──────
-// The OpenRouter API key is stored safely inside the Apps Script
+// ── AI SCORE SCANNING via Cloudflare Worker proxy ────────
+// Set up your free worker at: https://workers.cloudflare.com
+// Paste your worker URL below after deploying:
+const CLOUDFLARE_WORKER_URL = 'https://green-poetry-d2d2.tlord16.workers.dev';
 // ──────────────────────────────────────────────────────
 
 const TABLES = [
