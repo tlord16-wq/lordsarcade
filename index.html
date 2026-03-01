@@ -1059,21 +1059,17 @@ async function scanScore(event) {
     // Resize image to max 400px wide — keeps base64 small enough for GET request
     const base64Data = await resizeImage(file, 600);
 
-    const proxyUrl = SHEETS_URL + '?' + new URLSearchParams({
-      action: 'scan_image',
-      imageData: base64Data
-    }).toString();
+    const response = await fetch(CLOUDFLARE_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData: base64Data })
+    });
 
-    const response = await fetch(proxyUrl);
-
-    if (!response.ok) {
-      throw new Error("Proxy error " + response.status);
-    }
-
+    if (!response.ok) throw new Error('Worker error ' + response.status);
     const data = await response.json();
     if (data.status !== 'ok') throw new Error(data.msg || 'Scan failed');
-    const rawText = data.text || "";
-    console.log("Scan response:", rawText);
+    const rawText = data.text || '';
+    console.log('Scan response:', rawText);
 
     const score = extractScoreFromResponse(rawText);
 
