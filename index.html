@@ -1039,14 +1039,13 @@ async function scanScore(event) {
     const base64Data = await fileToBase64(file);
     const mimeType = file.type || "image/jpeg";
 
-    // Call our Google Apps Script proxy — key is safe inside Google
-    const proxyUrl = SHEETS_URL + '?' + new URLSearchParams({
-      action: 'scan_image',
-      imageData: base64Data,
-      mimeType: mimeType
+    // POST to Google Apps Script proxy — redirect:follow required for GAS CORS
+    const response = await fetch(SHEETS_URL, {
+      method: 'POST',
+      redirect: 'follow',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'scan_image', imageData: base64Data, mimeType: mimeType })
     });
-
-    const response = await fetch(proxyUrl);
 
     if (!response.ok) {
       throw new Error("Proxy error " + response.status);
@@ -1487,19 +1486,27 @@ function doGet(e) {
       return out({ status: 'ok' });
     }
 
-    // ── SCAN SCORE IMAGE via OpenRouter (key stays safe here) ──
-    if (action === 'scan_image') {
-      var imageData = e.parameter.imageData;
-      var mimeType  = e.parameter.mimeType || 'image/jpeg';
+    return out({ status: 'ok', message: 'Lords Arcade API' });
 
+  } catch(err) {
+    return out({ status: 'error', msg: err.toString() });
+  }
+}
+
+// ── SCAN SCORE IMAGE — receives image via POST (handles large data) ──
+function doPost(e) {
+  try {
+    var body = JSON.parse(e.postData.contents || '{}');
+
+    if (body.action === 'scan_image') {
       var payload = {
         model: 'openrouter/free',
         max_tokens: 64,
         messages: [{
           role: 'user',
           content: [
-            { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + imageData } },
-            { type: 'text', text: 'This is a pinball machine score display. Read the main score shown. Return ONLY the raw digits, nothing else. Example: 9832070' }
+            { type: 'image_url', image_url: { url: 'data:' + body.mimeType + ';base64,' + body.imageData } },
+            { type: 'text', text: 'This is a pinball machine score display. Read the main score. Return ONLY the raw digits, nothing else. Example: 9832070' }
           ]
         }]
       };
@@ -1518,7 +1525,7 @@ function doGet(e) {
       return out({ status: 'ok', text: text });
     }
 
-    return out({ status: 'ok', message: 'Lords Arcade API' });
+    return out({ status: 'error', msg: 'Unknown action' });
 
   } catch(err) {
     return out({ status: 'error', msg: err.toString() });
