@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LORD'S ARCADE — MARCH PINBALL TOURNAMENT 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root {
     --bg:       #04040a;
@@ -761,6 +762,7 @@
   <div id="screen-setup" class="screen">
     <div class="panel">
       <div class="panel-title">⚙ GOOGLE SHEETS INTEGRATION</div>
+
       <p class="help-text">Follow these steps to sync tournament data with Google Sheets. Scores are ALWAYS saved locally — Sheets sync is optional.</p>
 
       <div class="step">
@@ -990,75 +992,53 @@ async function renderPlayerList() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SCORE SCANNER — Claude Vision OCR
+//  SCORE SCANNER — Tesseract.js (free, runs in browser)
 // ═══════════════════════════════════════════════════════
 async function scanScore(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  // Show preview
-  const preview = document.getElementById('scan-preview');
+  const preview  = document.getElementById('scan-preview');
   const resultEl = document.getElementById('scan-result');
-  const url = URL.createObjectURL(file);
-  preview.src = url;
+  const scoreInp = document.getElementById('score-val');
+
+  // Show image preview
+  const objectUrl = URL.createObjectURL(file);
+  preview.src = objectUrl;
   preview.style.display = 'block';
   resultEl.style.color = 'var(--cyan)';
-  resultEl.textContent = '⏳ READING SCORE...';
-
-  // Convert image to base64
-  const base64 = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
-  const mediaType = file.type || 'image/jpeg';
+  resultEl.textContent = '⏳ SCANNING... THIS TAKES A FEW SECONDS';
 
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 100,
-        messages: [{
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: { type: 'base64', media_type: mediaType, data: base64 }
-            },
-            {
-              type: 'text',
-              text: 'This is a photo of a pinball machine score display. Extract ONLY the final score number shown. Return ONLY the digits with no spaces, commas, or other characters. If you cannot clearly read a score, return the word UNCLEAR.'
-            }
-          ]
-        }]
-      })
+    // Run Tesseract OCR — digits only mode for best accuracy on score displays
+    const result = await Tesseract.recognize(file, 'eng', {
+      tessedit_char_whitelist: '0123456789',
+      tessedit_pageseg_mode: '7',   // treat as single line
     });
 
-    const data = await response.json();
-    const text = (data.content?.[0]?.text || '').trim().replace(/[^0-9]/g, '');
+    // Strip everything except digits
+    const digits = result.data.text.replace(/[^0-9]/g, '').trim();
 
-    if (!text) {
-      resultEl.style.color = 'var(--pink)';
-      resultEl.textContent = '✕ COULD NOT READ SCORE — TYPE IT MANUALLY';
+    // Remove leading zeros and validate
+    const score = parseInt(digits, 10);
+
+    if (!digits || isNaN(score) || score === 0) {
+      resultEl.style.color = 'var(--orange)';
+      resultEl.textContent = '⚠ COULD NOT READ — TRY AGAIN OR TYPE MANUALLY';
     } else {
       resultEl.style.color = 'var(--green)';
-      resultEl.textContent = '✓ SCORE DETECTED: ' + parseInt(text).toLocaleString();
-      document.getElementById('score-val').value = text;
-      // Flash the score input
-      const inp = document.getElementById('score-val');
-      inp.style.borderColor = 'var(--green)';
-      inp.style.boxShadow = '0 0 16px var(--green)88';
-      setTimeout(() => { inp.style.borderColor = ''; inp.style.boxShadow = ''; }, 2000);
-      toast('📸 SCORE SCANNED: ' + parseInt(text).toLocaleString());
+      resultEl.textContent = '✓ SCORE DETECTED: ' + score.toLocaleString();
+      scoreInp.value = score;
+      // Flash green on the input
+      scoreInp.style.borderColor = 'var(--green)';
+      scoreInp.style.boxShadow = '0 0 16px #00ff6688';
+      setTimeout(() => { scoreInp.style.borderColor = ''; scoreInp.style.boxShadow = ''; }, 2000);
+      toast('📸 SCORE SCANNED: ' + score.toLocaleString());
     }
   } catch(e) {
     resultEl.style.color = 'var(--pink)';
-    resultEl.textContent = '✕ SCAN FAILED — TYPE SCORE MANUALLY';
-    console.error('Scan error:', e);
+    resultEl.textContent = '✕ SCAN ERROR — TYPE SCORE MANUALLY';
+    console.error('Tesseract error:', e);
   }
 }
 
