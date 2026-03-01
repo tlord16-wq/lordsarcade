@@ -1010,6 +1010,24 @@ function fileToBase64(file) {
   });
 }
 
+// Resize image to maxWidth and return base64 string (JPEG, quality 0.7)
+function resizeImage(file, maxWidth) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
+    };
+    img.src = url;
+  });
+}
+
 function extractScoreFromResponse(text) {
   const cleaned = text.replace(/[,\s]/g, "");
   const runs = cleaned.match(/\d+/g) || [];
@@ -1036,16 +1054,15 @@ async function scanScore(event) {
   resultEl.textContent = "\u23f3 READING SCORE WITH AI...";
 
   try {
-    const base64Data = await fileToBase64(file);
-    const mimeType = file.type || "image/jpeg";
+    // Resize image to max 400px wide — keeps base64 small enough for GET request
+    const base64Data = await resizeImage(file, 400);
 
-    // POST to Google Apps Script proxy — redirect:follow required for GAS CORS
-    const response = await fetch(SHEETS_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'scan_image', imageData: base64Data, mimeType: mimeType })
-    });
+    const proxyUrl = SHEETS_URL + '?' + new URLSearchParams({
+      action: 'scan_image',
+      imageData: base64Data
+    }).toString();
+
+    const response = await fetch(proxyUrl);
 
     if (!response.ok) {
       throw new Error("Proxy error " + response.status);
@@ -1486,26 +1503,17 @@ function doGet(e) {
       return out({ status: 'ok' });
     }
 
-    return out({ status: 'ok', message: 'Lords Arcade API' });
+    // ── SCAN SCORE IMAGE via OpenRouter ──
+    if (action === 'scan_image') {
+      var imageData = e.parameter.imageData;
 
-  } catch(err) {
-    return out({ status: 'error', msg: err.toString() });
-  }
-}
-
-// ── SCAN SCORE IMAGE — receives image via POST (handles large data) ──
-function doPost(e) {
-  try {
-    var body = JSON.parse(e.postData.contents || '{}');
-
-    if (body.action === 'scan_image') {
       var payload = {
         model: 'openrouter/free',
         max_tokens: 64,
         messages: [{
           role: 'user',
           content: [
-            { type: 'image_url', image_url: { url: 'data:' + body.mimeType + ';base64,' + body.imageData } },
+            { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + imageData } },
             { type: 'text', text: 'This is a pinball machine score display. Read the main score. Return ONLY the raw digits, nothing else. Example: 9832070' }
           ]
         }]
@@ -1525,12 +1533,14 @@ function doPost(e) {
       return out({ status: 'ok', text: text });
     }
 
-    return out({ status: 'error', msg: 'Unknown action' });
+    return out({ status: 'ok', message: 'Lords Arcade API' });
 
   } catch(err) {
     return out({ status: 'error', msg: err.toString() });
   }
 }
+
+function doPost(e) { return doGet(e); }
 
 function out(obj) {
   return ContentService
