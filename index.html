@@ -853,9 +853,8 @@
 // ═══════════════════════════════════════════════════════
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw6pquHHLQy9MkgFEM_dGsSCMog0dZ91ZN4PbZnSI6FbRpMx8oTEfWpGqiVJu0VJMsp/exec';
 
-// ── OPENROUTER API KEY ──────────────────────────────────
-const OPENROUTER_API_KEY = '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';
-function getApiKey() { return OPENROUTER_API_KEY; }
+// ── AI SCORE SCANNING via Google Apps Script proxy ──────
+// The OpenRouter API key is stored safely inside the Apps Script
 // ──────────────────────────────────────────────────────
 
 const TABLES = [
@@ -1037,41 +1036,26 @@ async function scanScore(event) {
   resultEl.textContent = "\u23f3 READING SCORE WITH AI...";
 
   try {
-    const OPENROUTER_API_KEY = getApiKey();
-    if (!OPENROUTER_API_KEY) {
-      throw new Error('No API key — paste your OpenRouter key in the box above the camera');
-    }
-
     const base64Data = await fileToBase64(file);
     const mimeType = file.type || "image/jpeg";
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "openrouter/free",
-        max_tokens: 64,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64Data}` } },
-            { type: "text", text: "This is a photo of a pinball machine score display (LED or dot-matrix). Read the main player score (the brightest/largest number). Return ONLY the raw digits, no commas, no spaces, nothing else. Example: 9832070" }
-          ]
-        }]
-      })
+    // Call our Google Apps Script proxy — key is safe inside Google
+    const proxyUrl = SHEETS_URL + '?' + new URLSearchParams({
+      action: 'scan_image',
+      imageData: base64Data,
+      mimeType: mimeType
     });
 
+    const response = await fetch(proxyUrl);
+
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || "API error " + response.status);
+      throw new Error("Proxy error " + response.status);
     }
 
     const data = await response.json();
-    const rawText = data.choices?.[0]?.message?.content || "";
-    console.log("OpenRouter response:", rawText);
+    if (data.status !== 'ok') throw new Error(data.msg || 'Scan failed');
+    const rawText = data.text || "";
+    console.log("Scan response:", rawText);
 
     const score = extractScoreFromResponse(rawText);
 
@@ -1435,6 +1419,8 @@ function toast(msg, err = false) {
 const APPS_SCRIPT = `// Lord's Arcade Pinball Tournament 2026
 // Deploy as Web App: Execute as Me, Access: Anyone
 
+var OPENROUTER_KEY = 'PASTE_YOUR_OPENROUTER_KEY_HERE';
+
 function doGet(e) {
   try {
     var action = e.parameter ? e.parameter.action : '';
@@ -1501,7 +1487,38 @@ function doGet(e) {
       return out({ status: 'ok' });
     }
 
-    return out({ status: 'ok', message: "Lords Arcade API" });
+    // ── SCAN SCORE IMAGE via OpenRouter (key stays safe here) ──
+    if (action === 'scan_image') {
+      var imageData = e.parameter.imageData;
+      var mimeType  = e.parameter.mimeType || 'image/jpeg';
+
+      var payload = {
+        model: 'openrouter/free',
+        max_tokens: 64,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image_url', image_url: { url: 'data:' + mimeType + ';base64,' + imageData } },
+            { type: 'text', text: 'This is a pinball machine score display. Read the main score shown. Return ONLY the raw digits, nothing else. Example: 9832070' }
+          ]
+        }]
+      };
+
+      var options = {
+        method: 'post',
+        contentType: 'application/json',
+        headers: { 'Authorization': 'Bearer ' + OPENROUTER_KEY },
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+
+      var response = UrlFetchApp.fetch('https://openrouter.ai/api/v1/chat/completions', options);
+      var json = JSON.parse(response.getContentText());
+      var text = (json.choices && json.choices[0] && json.choices[0].message && json.choices[0].message.content) || '';
+      return out({ status: 'ok', text: text });
+    }
+
+    return out({ status: 'ok', message: 'Lords Arcade API' });
 
   } catch(err) {
     return out({ status: 'error', msg: err.toString() });
