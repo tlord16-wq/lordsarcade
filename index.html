@@ -687,6 +687,19 @@
         </div>
       </div>
 
+      <!-- AI KEY SETUP -->
+      <div id="api-key-box" style="background:#1a0a2e;border:1px solid var(--purple);border-radius:8px;padding:12px;margin-bottom:12px;">
+        <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--purple);margin-bottom:8px;">🔑 AI SCORE READER KEY</div>
+        <div style="font-family:'VT323',monospace;font-size:14px;color:var(--dim);margin-bottom:8px;">Get a FREE key at openrouter.ai/keys — paste it here:</div>
+        <div style="display:flex;gap:8px;">
+          <input id="api-key-input" type="password" placeholder="sk-or-v1-..." 
+            style="flex:1;background:#0a0015;border:1px solid var(--purple);color:var(--green);font-family:'VT323',monospace;font-size:16px;padding:8px;border-radius:4px;"
+            onkeydown="if(event.key==='Enter')saveApiKey()">
+          <button onclick="saveApiKey()" class="btn btn-cyan" style="font-size:8px;padding:8px 12px;white-space:nowrap;">SAVE KEY</button>
+        </div>
+        <div id="api-key-status" style="font-family:'VT323',monospace;font-size:14px;margin-top:6px;color:var(--dim);">No key saved yet</div>
+      </div>
+
       <!-- SCAN SCORE -->
       <label>📸 SCAN YOUR SCORE <span style="color:var(--dim);font-size:7px;">— or type below</span></label>
       <div class="scan-zone" id="scan-zone">
@@ -853,10 +866,24 @@
 // ═══════════════════════════════════════════════════════
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw6pquHHLQy9MkgFEM_dGsSCMog0dZ91ZN4PbZnSI6FbRpMx8oTEfWpGqiVJu0VJMsp/exec';
 
-// ── OPENROUTER API KEY (FREE) ─────────────────────────
-// Get a FREE key at: https://openrouter.ai/keys
-// Sign up with Google, then copy your key and paste below:
-const OPENROUTER_API_KEY = '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';
+// ── OPENROUTER API KEY — entered in-app, stored in localStorage ──
+function getApiKey() { return localStorage.getItem('openrouter_api_key') || ''; }
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val) { document.getElementById('api-key-status').textContent = '⚠ Please paste a key first'; return; }
+  localStorage.setItem('openrouter_api_key', val);
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('api-key-status').style.color = 'var(--green)';
+  document.getElementById('api-key-status').textContent = '✓ KEY SAVED! Ready to scan scores.';
+}
+function initApiKeyBox() {
+  const saved = getApiKey();
+  const status = document.getElementById('api-key-status');
+  if (saved) {
+    status.style.color = 'var(--green)';
+    status.textContent = '✓ KEY ACTIVE — ' + saved.substring(0, 12) + '...';
+  }
+}
 // ──────────────────────────────────────────────────────
 
 const TABLES = [
@@ -1038,8 +1065,9 @@ async function scanScore(event) {
   resultEl.textContent = "\u23f3 READING SCORE WITH AI...";
 
   try {
-    if (!OPENROUTER_API_KEY || OPENROUTER_API_KEY === 'YOUR_OPENROUTER_KEY_HERE') {
-      throw new Error('No OpenRouter API key set in HTML file');
+    const OPENROUTER_API_KEY = getApiKey();
+    if (!OPENROUTER_API_KEY) {
+      throw new Error('No API key — paste your OpenRouter key in the box above the camera');
     }
 
     const base64Data = await fileToBase64(file);
@@ -1615,6 +1643,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   buildLights();
   buildShamrocks();
+  initApiKeyBox();
   renderPlayerList();
 
   document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
