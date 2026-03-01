@@ -992,53 +992,130 @@ async function renderPlayerList() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  SCORE SCANNER — Tesseract.js (free, runs in browser)
+//  SCORE SCANNER — Tesseract.js + smart score extraction
 // ═══════════════════════════════════════════════════════
+
+// Preprocess: grayscale + contrast boost + threshold
+function preprocessImage(file) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale  = Math.min(3, 900 / Math.max(img.width, img.height));
+      canvas.width  = img.width  * scale;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = imageData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        let gray = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+        gray = Math.min(255, Math.max(0, (gray - 60) * 2.5));
+        d[i] = d[i+1] = d[i+2] = gray > 140 ? 255 : 0;
+        d[i+3] = 255;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      // White border padding
+      const out = document.createElement('canvas');
+      const pad = 30;
+      out.width = canvas.width + pad * 2;
+      out.height = canvas.height + pad * 2;
+      const octx = out.getContext('2d');
+      octx.fillStyle = '#fff';
+      octx.fillRect(0, 0, out.width, out.height);
+      octx.drawImage(canvas, pad, pad);
+      resolve(out.toDataURL('image/png'));
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+// Extract the best pinball score from raw OCR text.
+// Pinball scores are typically 4–9 digits. We find all
+// contiguous digit runs, then pick the most "score-like" one.
+function extractBestScore(rawText) {
+  // Find all runs of digits (ignoring separators like commas/spaces/dots)
+  const cleaned = rawText.replace(/[,.\s]/g, '');
+  const runs = cleaned.match(/\d+/g) || [];
+
+  if (!runs.length) return null;
+
+  // Score heuristics:
+  // 1. Must be 4–9 digits long
+  // 2. Prefer runs that are multiples of 10 (pinball scores usually end in 0)
+  // 3. Prefer longer runs
+  // 4. Must not start with too many repeated digits (artifact noise)
+  const candidates = runs
+    .filter(r => r.length >= 4 && r.length <= 9)
+    .filter(r => !/^(.){4,}$/.test(r)) // reject like 99999999
+    .map(r => ({
+      digits: r,
+      score: parseInt(r, 10),
+      priority:
+        (r.length * 10) +                          // longer = better
+        (r.endsWith('0') ? 5 : 0) +                // ends in 0 = bonus
+        (r.endsWith('00') ? 5 : 0) +               // ends in 00 = more bonus
+        (parseInt(r) > 10000 ? 3 : 0)              // at least 5 digits value
+    }))
+    .sort((a, b) => b.priority - a.priority);
+
+  return candidates.length ? candidates[0].score : null;
+}
+
 async function scanScore(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  // Reset the file input so the same photo can be retaken
+  event.target.value = '';
 
   const preview  = document.getElementById('scan-preview');
   const resultEl = document.getElementById('scan-result');
   const scoreInp = document.getElementById('score-val');
 
-  // Show image preview
-  const objectUrl = URL.createObjectURL(file);
-  preview.src = objectUrl;
+  // Show original photo preview immediately
+  const origUrl = URL.createObjectURL(file);
+  preview.src = origUrl;
   preview.style.display = 'block';
   resultEl.style.color = 'var(--cyan)';
-  resultEl.textContent = '⏳ SCANNING... THIS TAKES A FEW SECONDS';
+  resultEl.textContent = '⏳ PROCESSING IMAGE...';
 
   try {
-    // Run Tesseract OCR — digits only mode for best accuracy on score displays
-    const result = await Tesseract.recognize(file, 'eng', {
-      tessedit_char_whitelist: '0123456789',
-      tessedit_pageseg_mode: '7',   // treat as single line
+    const processedUrl = await preprocessImage(file);
+    resultEl.textContent = '⏳ READING SCORE...';
+
+    // Run OCR — use word/line mode so we get individual words not one blob
+    const result = await Tesseract.recognize(processedUrl, 'eng', {
+      tessedit_char_whitelist: '0123456789,. ',
+      tessedit_pageseg_mode: '6',  // uniform block of text
+      tessjs_create_pdf: '0',
+      tessjs_create_hocr: '0',
     });
 
-    // Strip everything except digits
-    const digits = result.data.text.replace(/[^0-9]/g, '').trim();
+    const rawText = result.data.text || '';
+    console.log('Raw OCR:', rawText); // helpful for debugging
 
-    // Remove leading zeros and validate
-    const score = parseInt(digits, 10);
+    const score = extractBestScore(rawText);
 
-    if (!digits || isNaN(score) || score === 0) {
+    if (!score) {
       resultEl.style.color = 'var(--orange)';
-      resultEl.textContent = '⚠ COULD NOT READ — TRY AGAIN OR TYPE MANUALLY';
+      resultEl.textContent = '⚠ COULD NOT READ — PLEASE TYPE SCORE MANUALLY';
+      toast('📷 TIP: ZOOM IN ON JUST THE SCORE NUMBERS', true);
     } else {
       resultEl.style.color = 'var(--green)';
       resultEl.textContent = '✓ SCORE DETECTED: ' + score.toLocaleString();
       scoreInp.value = score;
-      // Flash green on the input
       scoreInp.style.borderColor = 'var(--green)';
       scoreInp.style.boxShadow = '0 0 16px #00ff6688';
-      setTimeout(() => { scoreInp.style.borderColor = ''; scoreInp.style.boxShadow = ''; }, 2000);
+      setTimeout(() => { scoreInp.style.borderColor = ''; scoreInp.style.boxShadow = ''; }, 2500);
       toast('📸 SCORE SCANNED: ' + score.toLocaleString());
     }
   } catch(e) {
     resultEl.style.color = 'var(--pink)';
     resultEl.textContent = '✕ SCAN ERROR — TYPE SCORE MANUALLY';
-    console.error('Tesseract error:', e);
+    console.error('Scan error:', e);
   }
 }
 
