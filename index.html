@@ -1029,10 +1029,10 @@ function resizeImage(file, maxWidth) {
 }
 
 function extractScoreFromResponse(text) {
-  const cleaned = text.replace(/[,\s]/g, "");
+  const cleaned = text.replace(/[,\s\n]/g, "");
   const runs = cleaned.match(/\d+/g) || [];
   const candidates = runs
-    .filter(r => r.length >= 4)
+    .filter(r => r.length >= 3)
     .sort((a, b) => b.length - a.length);
   return candidates.length ? parseInt(candidates[0], 10) : null;
 }
@@ -1055,7 +1055,7 @@ async function scanScore(event) {
 
   try {
     // Resize image to max 400px wide — keeps base64 small enough for GET request
-    const base64Data = await resizeImage(file, 400);
+    const base64Data = await resizeImage(file, 600);
 
     const proxyUrl = SHEETS_URL + '?' + new URLSearchParams({
       action: 'scan_image',
@@ -1508,7 +1508,7 @@ function doGet(e) {
       var imageData = e.parameter.imageData;
 
       var payload = {
-        model: 'openrouter/free',
+        model: 'google/gemini-2.0-flash-lite-001',
         max_tokens: 64,
         messages: [{
           role: 'user',
