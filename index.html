@@ -701,6 +701,7 @@
         <div class="scan-sub">AI will read the number automatically</div>
         <img id="scan-preview" src="" alt="preview">
         <div id="scan-result"></div>
+        <div id="score-picker" style="display:none;margin-top:10px;"></div>
       </div>
 
       <label>YOUR SCORE <span style="color:var(--dim);font-size:7px;">— edit if needed</span></label>
@@ -1035,13 +1036,25 @@ function resizeImage(file, maxWidth) {
   });
 }
 
-function extractScoreFromResponse(text) {
-  const cleaned = text.replace(/[,\s\n]/g, "");
+function extractScoresFromResponse(text) {
+  // Try to parse JSON array first (new prompt format)
+  try {
+    const jsonMatch = text.match(/\[.*\]/s);
+    if (jsonMatch) {
+      const arr = JSON.parse(jsonMatch[0]);
+      const scores = arr.map(n => parseInt(String(n).replace(/[^\d]/g, ''))).filter(n => !isNaN(n) && n > 100);
+      if (scores.length) return scores;
+    }
+  } catch(e) {}
+  // Fallback: extract all digit runs
+  const cleaned = text.replace(/[,]/g, "");
   const runs = cleaned.match(/\d+/g) || [];
-  const candidates = runs
+  return runs
     .filter(r => r.length >= 3)
-    .sort((a, b) => b.length - a.length);
-  return candidates.length ? parseInt(candidates[0], 10) : null;
+    .map(r => parseInt(r))
+    .filter((v, i, a) => a.indexOf(v) === i) // dedupe
+    .sort((a, b) => b - a)
+    .slice(0, 4);
 }
 
 async function scanScore(event) {
@@ -1076,20 +1089,36 @@ async function scanScore(event) {
     const rawText = data.text || '';
     console.log('Scan response:', rawText);
 
-    const score = extractScoreFromResponse(rawText);
+    const scores = extractScoresFromResponse(rawText);
 
-    if (!score) {
+    if (!scores.length) {
       resultEl.style.color = "var(--orange)";
       resultEl.textContent = "\u26a0 COULD NOT READ \u2014 PLEASE TYPE SCORE MANUALLY";
       toast("\ud83d\udcf7 TIP: ZOOM IN ON JUST THE SCORE NUMBERS", true);
-    } else {
+    } else if (scores.length === 1) {
       resultEl.style.color = "var(--green)";
-      resultEl.textContent = "\u2713 SCORE DETECTED: " + score.toLocaleString();
-      scoreInp.value = score;
+      resultEl.textContent = "\u2713 SCORE DETECTED: " + scores[0].toLocaleString();
+      scoreInp.value = scores[0];
       scoreInp.style.borderColor = "var(--green)";
       scoreInp.style.boxShadow = "0 0 16px #00ff6688";
       setTimeout(() => { scoreInp.style.borderColor = ""; scoreInp.style.boxShadow = ""; }, 2500);
-      toast("\ud83d\udcf8 SCORE SCANNED: " + score.toLocaleString());
+      toast("\ud83d\udcf8 SCORE SCANNED: " + scores[0].toLocaleString());
+    } else {
+      // Multiple scores — show picker
+      resultEl.style.color = "var(--cyan)";
+      resultEl.textContent = "\u2193 TAP YOUR SCORE BELOW";
+      const picker = document.getElementById('score-picker');
+      picker.innerHTML = scores.map(s =>
+        \`<button onclick="pickScore(\${s})" style="
+          display:block;width:100%;margin:6px 0;padding:12px;
+          background:#0a0015;border:2px solid var(--purple);border-radius:6px;
+          color:var(--green);font-family:'Press Start 2P',monospace;font-size:12px;
+          cursor:pointer;text-align:center;
+        " onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--purple)'">
+          \${s.toLocaleString()}
+        </button>\`
+      ).join('');
+      picker.style.display = 'block';
     }
   } catch(e) {
     resultEl.style.color = "var(--pink)";
@@ -1110,6 +1139,20 @@ function selectTable(id, el) {
   sessionStorage.setItem('selectedTable', id);
   document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
+}
+
+function pickScore(score) {
+  const scoreInp = document.getElementById('score-val');
+  const resultEl = document.getElementById('scan-result');
+  const picker   = document.getElementById('score-picker');
+  scoreInp.value = score;
+  picker.style.display = 'none';
+  resultEl.style.color = 'var(--green)';
+  resultEl.textContent = '\u2713 SCORE SELECTED: ' + score.toLocaleString();
+  scoreInp.style.borderColor = 'var(--green)';
+  scoreInp.style.boxShadow = '0 0 16px #00ff6688';
+  setTimeout(() => { scoreInp.style.borderColor = ''; scoreInp.style.boxShadow = ''; }, 2500);
+  toast('\ud83c\udfaf SCORE SELECTED: ' + score.toLocaleString());
 }
 
 async function submitScore() {
