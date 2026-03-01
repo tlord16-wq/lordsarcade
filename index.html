@@ -892,6 +892,7 @@ let currentPlayer = null;
 
 function logIn(name) {
   currentPlayer = name;
+  sessionStorage.setItem('currentPlayer', name);
   document.getElementById('logged-in-panel').style.display = '';
   document.getElementById('register-panel').style.display = 'none';
   document.getElementById('logged-in-name').textContent = name;
@@ -903,6 +904,7 @@ function logIn(name) {
 
 function logOut() {
   currentPlayer = null;
+  sessionStorage.removeItem('currentPlayer');
   document.getElementById('logged-in-panel').style.display = 'none';
   document.getElementById('register-panel').style.display = '';
   document.getElementById('score-no-player').style.display = 'none';
@@ -1584,6 +1586,13 @@ function buildShamrocks() {
 //  INIT
 // ═══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore login session after camera round-trip on mobile
+  const savedPlayer = sessionStorage.getItem('currentPlayer');
+  if (savedPlayer) {
+    currentPlayer = savedPlayer;
+    // Wait for page to fully render before restoring UI
+    setTimeout(() => logIn(savedPlayer), 100);
+  }
   buildLights();
   buildShamrocks();
   renderPlayerList();
