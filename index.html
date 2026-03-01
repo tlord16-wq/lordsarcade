@@ -1109,14 +1109,13 @@ async function scanScore(event) {
       resultEl.textContent = "\u2193 TAP YOUR SCORE BELOW";
       const picker = document.getElementById('score-picker');
       picker.innerHTML = scores.map(s =>
-        \`<button onclick="pickScore(\${s})" style="
-          display:block;width:100%;margin:6px 0;padding:12px;
-          background:#0a0015;border:2px solid var(--purple);border-radius:6px;
-          color:var(--green);font-family:'Press Start 2P',monospace;font-size:12px;
-          cursor:pointer;text-align:center;
-        " onmouseover="this.style.borderColor='var(--green)'" onmouseout="this.style.borderColor='var(--purple)'">
-          \${s.toLocaleString()}
-        </button>\`
+        '<button onclick="pickScore(' + s + ')" style="' +
+        'display:block;width:100%;margin:6px 0;padding:12px;' +
+        'background:#0a0015;border:2px solid var(--purple);border-radius:6px;' +
+        'color:var(--green);font-family:VT323,monospace;font-size:22px;' +
+        'cursor:pointer;text-align:center;">' +
+        s.toLocaleString() +
+        '</button>'
       ).join('');
       picker.style.display = 'block';
     }
