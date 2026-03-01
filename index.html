@@ -854,7 +854,7 @@
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbw6pquHHLQy9MkgFEM_dGsSCMog0dZ91ZN4PbZnSI6FbRpMx8oTEfWpGqiVJu0VJMsp/exec';
 
 // ── OPENROUTER API KEY ──────────────────────────────────
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = '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';
 function getApiKey() { return OPENROUTER_API_KEY; }
 // ──────────────────────────────────────────────────────
 
@@ -1052,7 +1052,7 @@ async function scanScore(event) {
         "Authorization": `Bearer ${OPENROUTER_API_KEY}`
       },
       body: JSON.stringify({
-        model: "openrouter/auto",
+        model: "openrouter/free",
         max_tokens: 64,
         messages: [{
           role: "user",
