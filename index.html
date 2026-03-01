@@ -1104,6 +1104,7 @@ let selectedTable = null;
 
 function selectTable(id, el) {
   selectedTable = id;
+  sessionStorage.setItem('selectedTable', id);
   document.querySelectorAll('.table-card').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
 }
@@ -1121,8 +1122,14 @@ async function submitScore() {
 
   // Check existing best from sheet
   const data  = await fetchData();
+  const players = data.players || [];
   const tableScores = (data.scores || {})[selectedTable] || {};
   const prev  = tableScores[currentPlayer];
+
+  // If player not found in sheet (e.g. after camera reload), re-register silently
+  if (!players.map(p => p.toUpperCase()).includes(currentPlayer.toUpperCase())) {
+    await apiCall({ action: 'register', name: currentPlayer, timestamp: new Date().toISOString() });
+  }
 
   if (prev !== undefined && score <= prev) {
     toast('YOUR BEST IS ALREADY ' + prev.toLocaleString() + '!', true);
@@ -1148,7 +1155,8 @@ async function submitScore() {
     document.getElementById('score-val').value = '';
     document.getElementById('score-val').focus();
   } else {
-    toast('ERROR SAVING SCORE — CHECK CONNECTION', true);
+    const errMsg = result.msg || result.error || JSON.stringify(result) || 'CHECK CONNECTION';
+    toast('❌ ERROR: ' + errMsg, true);
   }
 }
 
@@ -1588,10 +1596,22 @@ function buildShamrocks() {
 document.addEventListener('DOMContentLoaded', () => {
   // Restore login session after camera round-trip on mobile
   const savedPlayer = sessionStorage.getItem('currentPlayer');
+  const savedTable  = sessionStorage.getItem('selectedTable');
   if (savedPlayer) {
     currentPlayer = savedPlayer;
-    // Wait for page to fully render before restoring UI
     setTimeout(() => logIn(savedPlayer), 100);
+  }
+  if (savedTable) {
+    selectedTable = savedTable;
+    // Re-highlight the selected table card after render
+    setTimeout(() => {
+      const cards = document.querySelectorAll('.table-card');
+      cards.forEach(c => {
+        if (c.getAttribute('onclick') && c.getAttribute('onclick').includes("'" + savedTable + "'")) {
+          c.classList.add('selected');
+        }
+      });
+    }, 200);
   }
   buildLights();
   buildShamrocks();
